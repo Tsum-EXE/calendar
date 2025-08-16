@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Infinite Scrolling Calendar</title>
+  <title>cal</title>
   <style>
-    /* (your original CSS kept exactly as-is) */
     :root {
       --bg: #f7f4ef;
       --panel: #fffdf8;
@@ -20,6 +19,7 @@
       --radius: 10px;
       --shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
@@ -29,52 +29,245 @@
       background: var(--bg);
       overflow: hidden;
     }
-    .app { height: 100vh; width: 100vw; display: grid; grid-template-rows: var(--header-h) 1fr; }
-    .weekday-header { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(7, 1fr); align-items: center; border-bottom: 1px solid rgba(0,0,0,0.08); background: var(--panel); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
-    .weekday-header .dayname { text-align: center; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); user-select: none; }
-    .calendar-scroll { height: calc(100vh - var(--header-h)); overflow: auto; padding: calc(var(--gap) * 1.5); scroll-behavior: smooth; }
-    .weeks { display: flex; flex-direction: column; gap: var(--gap); min-height: 100%; }
-    .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--gap); min-height: calc((100vh - var(--header-h) - 3 * var(--gap) - 2 * calc(var(--gap) * 1.5)) / 4); position: relative; }
-    .day { position: relative; border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.06); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+    .app {
+      height: 100vh;
+      width: 100vw;
+      display: grid;
+      grid-template-rows: var(--header-h) 1fr;
+    }
+
+    /* Sticky weekday header (Monday first) */
+    .weekday-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      align-items: center;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      background: var(--panel);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .weekday-header .dayname {
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    /* Scroll container */
+    .calendar-scroll {
+      height: calc(100vh - var(--header-h));
+      overflow: auto;
+      padding: calc(var(--gap) * 1.5);
+      scroll-behavior: smooth;
+    }
+
+    .weeks {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      min-height: 100%;
+    }
+
+    /* Each week row: baseline shows ~4 weeks; grows as needed if many tasks */
+    .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: var(--gap);
+      min-height: calc((100vh - var(--header-h) - 3 * var(--gap) - 2 * calc(var(--gap) * 1.5)) / 4);
+      position: relative;
+    }
+
+    .day {
+      position: relative;
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
     .day:hover { outline: 2px solid var(--ring); }
-    .date-row { display: flex; align-items: center; justify-content: space-between; }
-    .date-num { font-weight: 600; font-size: 14px; }
+
+    .date-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .date-num {
+      font-weight: 600;
+      font-size: 14px;
+    }
     .out-month .date-num { color: var(--muted); }
-    .today { border: 1px solid rgba(224,122,95,0.6); box-shadow: 0 0 0 2px rgba(224,122,95,0.25), var(--shadow); }
-    .today .date-num::after { content: " Today"; font-size: 11px; font-weight: 700; margin-left: 6px; color: white; background: var(--today); padding: 2px 6px; border-radius: 999px; }
-    .month-pill { position: absolute; left: 10px; bottom: 10px; font-size: 12px; color: var(--accent); background: rgba(184,139,90,0.12); border: 1px solid rgba(184,139,90,0.35); padding: 4px 8px; border-radius: 999px; z-index: 2; }
-    .week.has-new-month::before { content: attr(data-month-label); position: absolute; transform: translateY(-50%); left: 16px; font-size: 32px; font-weight: 700; line-height: 1; color: rgba(0,0,0,0.05); pointer-events: none; }
+
+    /* Today highlight */
+    .today {
+      border: 1px solid rgba(224,122,95,0.6);
+      box-shadow: 0 0 0 2px rgba(224,122,95,0.25), var(--shadow);
+    }
+    .today .date-num::after {
+      content: " Today";
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 6px;
+      color: white;
+      background: var(--today);
+      padding: 2px 6px;
+      border-radius: 999px;
+    }
+
+    .month-pill {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(184,139,90,0.12);
+      border: 1px solid rgba(184,139,90,0.35);
+      padding: 4px 8px;
+      border-radius: 999px;
+      z-index: 2;
+    }
+
+    .week.has-new-month::before {
+      content: attr(data-month-label);
+      position: absolute;
+      transform: translateY(-50%);
+      left: 16px;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+      color: rgba(0,0,0,0.05);
+      pointer-events: none;
+    }
+
+    /* Tasks list */
     .tasks { display: flex; flex-direction: column; gap: 4px; }
-    .task { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); background: var(--panel-2); cursor: pointer; user-select: none; }
+
+    .task {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.06);
+      background: var(--panel-2);
+      cursor: pointer;
+      user-select: none;
+    }
     .task[draggable="true"] { cursor: grab; }
     .task.dragging { opacity: 0.6; cursor: grabbing; }
     .task.selected { outline: 2px solid var(--accent); }
-    .check-wrap { position: relative; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; }
-    .check { position: absolute; opacity: 0; pointer-events: none; }
-    .check-box { width: 18px; height: 18px; border: 2px solid #a78b71; border-radius: 5px; display: grid; place-items: center; transition: box-shadow .12s ease, background .12s ease, border-color .12s ease; box-shadow: 0 1px 0 rgba(0,0,0,0.04); background: #fff; }
-    .check-box::after { content: ""; width: 10px; height: 10px; border-radius: 2px; transform: scale(0); transition: transform .12s ease; background: #a78b71; }
+
+    /* Better, bigger checkbox with easy click target */
+    .check-wrap {
+      position: relative;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: grid; place-items: center;
+      cursor: pointer;
+    }
+    .check {
+      position: absolute;
+      opacity: 0; pointer-events: none; /* hide native */
+    }
+    .check-box {
+      width: 18px; height: 18px;
+      border: 2px solid #a78b71;
+      border-radius: 5px;
+      display: grid; place-items: center;
+      transition: box-shadow .12s ease, background .12s ease, border-color .12s ease;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+      background: #fff;
+    }
+    .check-box::after {
+      content: "";
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      transform: scale(0);
+      transition: transform .12s ease;
+      background: #a78b71;
+    }
     .check:checked + .check-box { background: #efe6db; border-color: #a78b71; }
     .check:checked + .check-box::after { transform: scale(1); }
     .check-wrap:hover .check-box { box-shadow: 0 0 0 3px rgba(167,139,113,0.20); }
-    .task.completed { color: #9a9a9a; background: #f0f0f0; border-style: dashed; }
+
+    .task.completed {
+      color: #9a9a9a;
+      background: #f0f0f0;
+      border-style: dashed;
+    }
+    /* preview gray when hovering the checkbox */
     .task.preview-complete { color: #9a9a9a; background: #f0f0f0; border-style: dashed; }
+
     .day.drag-over { outline: 2px dashed var(--accent); }
+
+    /* Scrollbars */
     .calendar-scroll::-webkit-scrollbar { width: 8px; }
     .calendar-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 999px; }
     .calendar-scroll::-webkit-scrollbar-track { background: transparent; }
-    #backToToday { position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 14px; background: var(--today); color: white; border: none; border-radius: 999px; box-shadow: var(--shadow); cursor: pointer; transition: bottom 0.3s ease; z-index: 10; }
+
+    /* Back to Today button */
+    #backToToday {
+      position: fixed;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 16px;
+      font-size: 14px;
+      background: var(--today);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: bottom 0.3s ease;
+      z-index: 10;
+    }
     #backToToday.show { bottom: 20px; }
-    .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; justify-content: center; align-items: center; z-index: 20; }
-    .dialog { background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 10px; min-width: 280px; max-width: 90vw; }
+
+    /* Dialog */
+    .dialog-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: none; /* flex when open */
+      justify-content: center; align-items: center;
+      z-index: 20;
+    }
+    .dialog {
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: flex; flex-direction: column; gap: 10px;
+      min-width: 280px; max-width: 90vw;
+    }
     .dialog h3 { margin: 0; font-size: 16px; }
-    .dialog input[type="text"] { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 8px; }
+    .dialog input[type="text"] {
+      padding: 8px; font-size: 14px;
+      border: 1px solid #ccc; border-radius: 8px;
+    }
     .color-options { display: flex; gap: 8px; }
-    .color-option { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+    .color-option {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid transparent; cursor: pointer;
+    }
     .color-option.selected { border-color: #333; }
     .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .btn { background: #eee; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+    .btn {
+      background: #eee; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    }
     .btn.primary { background: var(--accent); color: white; }
-    .day.dimmed { opacity: 0.5; }
+    .day.dimmed {
+  opacity: 0.5;
+}
   </style>
 </head>
 <body>
@@ -88,11 +281,14 @@
       <div class="dayname">Sat</div>
       <div class="dayname">Sun</div>
     </div>
+
     <div id="scroll" class="calendar-scroll" role="region" aria-label="Infinite calendar">
       <div id="weeks" class="weeks"></div>
     </div>
   </div>
+
   <button id="backToToday">Back to Today</button>
+
   <!-- Dialog -->
   <div class="dialog-overlay" id="dialogOverlay">
     <div class="dialog" role="dialog" aria-modal="true">
@@ -111,16 +307,31 @@
   </div>
 
   <script>
-    /* ============================
-       CONFIG: JSONBin (client)
-       Replace placeholders below.
-       WARNING: putting the API key in client JS is insecure.
-       For a secure setup, use the Express proxy further down.
-       ============================ */
-    const JSONBIN_API_KEY = "$2a$10$bH311836WLuMwF5eNdomvO3SXkolbKVknLlmXPiJtI.GHtffp9K6q";   // <-- replace (or store in localStorage/ENV)
-    const JSONBIN_BIN_ID  = "68a0d36d43b1c97be91fedf6";   // <-- replace
-
     // ===== Utilities =====
+    function saveTasks() {
+  const data = {
+    autoId,
+    tasks: Array.from(tasksById.values())
+  };
+  localStorage.setItem("calendarTasks", JSON.stringify(data));
+}
+
+function loadTasks() {
+  const raw = localStorage.getItem("calendarTasks");
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    autoId = data.autoId || 1;
+    (data.tasks || []).forEach(t => {
+      // t.completed is already part of object
+      insertTask(t);
+    });
+  } catch (e) {
+    console.error("Failed to load tasks", e);
+  }
+}
+
+
     const fmtMonth = new Intl.DateTimeFormat(undefined, { month: 'long' });
     const fmtMonthShort = new Intl.DateTimeFormat(undefined, { month: 'short' });
     const fmtYear = new Intl.DateTimeFormat(undefined, { year: 'numeric' });
@@ -129,10 +340,10 @@
     const todayKey = ymdKey(today);
 
     function ymdKey(d) {
-      return d.getFullYear() + "-" +
+        return d.getFullYear() + "-" +
         String(d.getMonth() + 1).padStart(2, "0") + "-" +
         String(d.getDate()).padStart(2, "0");
-    }
+}
     function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
     function addWeeks(d, n) { return addDays(d, n * 7); }
     function startOfWeekMonday(d) {
@@ -156,7 +367,7 @@
     const cancelBtn = document.getElementById('cancelBtn');
     const dialogTitle = document.getElementById('dialogTitle');
 
-    // ===== Task store (in-memory) =====
+    // ===== Task store =====
     let autoId = 1;
     const tasksById = new Map();            // id -> task
     const tasksByDate = new Map();          // dateKey -> [ids]
@@ -168,7 +379,7 @@
       ensureDateList(task.dateKey);
       tasksByDate.get(task.dateKey).push(task.id);
       sortTasksForDate(task.dateKey);
-      saveTasks(); // persist after change
+      saveTasks();
     }
     function removeTask(task) {
       tasksById.delete(task.id);
@@ -196,82 +407,6 @@
         if ((A.completed?1:0) !== (B.completed?1:0)) return (A.completed?1:0) - (B.completed?1:0);
         return A.createdAt - B.createdAt;
       });
-    }
-
-    /* ============================
-       JSONBin: save & load
-       - PUT updates bin
-       - GET latest reads bin
-       NOTE: If you prefer a safer setup, see the Express proxy below.
-       ============================ */
-    async function saveTasks() {
-      const payload = {
-        autoId,
-        tasks: Array.from(tasksById.values())
-      };
-      // If API key or bin id missing, fallback to localStorage (safer than failing silently)
-      if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-        try { localStorage.setItem("calendarTasks", JSON.stringify(payload)); }
-        catch(e){ console.error("local fallback save failed", e); }
-        return;
-      }
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": JSONBIN_API_KEY,
-            // optional: disable versioning if you want overwrite behavior
-            "X-Bin-Versioning": "false"
-          },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
-          console.error("saveTasks: server returned", res.status, await res.text());
-          // fallback to localStorage
-          localStorage.setItem("calendarTasks", JSON.stringify(payload));
-        }
-      } catch (err) {
-        console.error("saveTasks failed", err);
-        // fallback to localStorage
-        try { localStorage.setItem("calendarTasks", JSON.stringify(payload)); } catch(e){}
-      }
-    }
-
-    async function loadTasks() {
-      // If no API config, try localStorage
-      if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-        const raw = localStorage.getItem("calendarTasks");
-        if (!raw) return;
-        try {
-          const data = JSON.parse(raw);
-          autoId = data.autoId || 1;
-          (data.tasks || []).forEach(t => insertTask(t));
-        } catch (e) {
-          console.error("Failed to load tasks from localStorage", e);
-        }
-        return;
-      }
-
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-          headers: { "X-Master-Key": JSONBIN_API_KEY }
-        });
-        if (!res.ok) {
-          console.warn("loadTasks: no remote data or server returned", res.status);
-          return;
-        }
-        const json = await res.json();
-        const data = json.record || json;
-        autoId = data.autoId || 1;
-        (data.tasks || []).forEach(t => {
-          // ensure createdAt exists for sorting
-          if (!t.createdAt) t.createdAt = Date.now();
-          insertTask(t);
-        });
-      } catch (e) {
-        console.error("loadTasks failed (network)", e);
-      }
     }
 
     // ===== Rendering weeks & days =====
@@ -345,11 +480,11 @@
         tasksWrap.className = 'tasks';
         day.appendChild(tasksWrap);
 
-        // Day click -> change active month & update highlight
+                // Day click -> change active month & update highlight
         day.addEventListener('click', () => {
-          const [y,m,d] = day.dataset.date.split("-").map(Number);
-          activeMonth = y + "-" + String(m).padStart(2, "0"); // ✅ local month
-          updateMonthHighlight();
+              const [y,m,d] = day.dataset.date.split("-").map(Number);
+              activeMonth = y + "-" + String(m).padStart(2, "0"); // ✅ local month
+ updateMonthHighlight();
         });
 
         // Day double click -> open create dialog if clicking empty space
@@ -420,9 +555,11 @@
     }
 
     function trimOffscreen(maxKeep = 160) {
-      const todayWeekKey = ymdKey(initialWeek);
+      const todayWeekKey = ymdKey(initialWeek); // keep the week containing today
       const weeks = weeksEl.children;
       if (weeks.length <= maxKeep) return;
+
+      // Remove from top but never remove today's week
       while (weeks.length > maxKeep) {
         const first = weeks[0];
         if (first.dataset.week === todayWeekKey) break;
@@ -433,6 +570,7 @@
           firstWeekStart = addWeeks(firstWeekStart, 1);
         } else break;
       }
+      // Remove from bottom but never remove today's week
       while (weeks.length > maxKeep) {
         const last = weeks[weeks.length - 1];
         if (last.dataset.week === todayWeekKey) break;
@@ -462,6 +600,7 @@
         if (nearBottom) appendWeeks(26);
         trimOffscreen();
 
+        // Show/hide button based on whether today's cell is visible within the scroll container
         const todayEl = weeksEl.querySelector('.day.today');
         if (todayEl) {
           const tRect = todayEl.getBoundingClientRect();
@@ -519,13 +658,13 @@
 
       // Checkbox toggle -> gray out & move to bottom
       input.addEventListener('change', () => {
-        task.completed = input.checked;
-        el.classList.toggle('completed', task.completed); // apply completed class
-        el.classList.remove('preview-complete');
-        sortTasksForDate(task.dateKey);
-        renderTasksForDate(task.dateKey);
-        saveTasks();   // ✅ save completed state
-      });
+  task.completed = input.checked;
+  el.classList.toggle('completed', task.completed); // apply completed class
+  el.classList.remove('preview-complete');
+  sortTasksForDate(task.dateKey);
+  renderTasksForDate(task.dateKey);
+  saveTasks();   // ✅ save completed state
+});
 
       // Select on single click (body only)
       el.addEventListener('click', (e) => {
@@ -599,6 +738,8 @@
       });
 
       dialogOverlay.style.display = 'flex';
+      // Focus+select name field (auto-selected)
+      saveTasks();
       requestAnimationFrame(() => { taskNameInput.focus(); taskNameInput.select(); });
     }
 
@@ -644,35 +785,38 @@
           t.name = name;
           t.color = selectedColor;
           renderTasksForDate(t.dateKey);
-          saveTasks();
         }
       } else {
         const task = { id: autoId++, name, color: selectedColor, completed: false, dateKey, createdAt: Date.now() };
         insertTask(task);
         renderTasksForDate(dateKey);
       }
+      saveTasks();
       closeDialog();
     }
 
     // ===== Kickoff =====
-    // Use async init so we can await loadTasks (server)
-    (async function init(){
-      await loadTasks();
-      renderInitial();
-      // ===== Month highlighting =====
-      let activeMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
-      function updateMonthHighlight() {
-        const allDays = weeksEl.querySelectorAll('.day');
-        allDays.forEach(dayEl => {
-          const [y,m,d] = dayEl.dataset.date.split("-").map(Number);
-          const date = new Date(y, m - 1, d); // local time
-          const ym = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
-          if (ym === activeMonth) dayEl.classList.remove('dimmed'); else dayEl.classList.add('dimmed');
-        });
-      }
-      updateMonthHighlight();
-      tasksByDate.forEach((_, dateKey) => renderTasksForDate(dateKey));
-    })();
+    loadTasks();
+    renderInitial();
+    // ===== Month highlighting =====
+    let activeMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+
+function updateMonthHighlight() {
+  const allDays = weeksEl.querySelectorAll('.day');
+  allDays.forEach(dayEl => {
+    const [y,m,d] = dayEl.dataset.date.split("-").map(Number);
+const date = new Date(y, m - 1, d); // local time, not UTC
+    const ym = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+    if (ym === activeMonth) {
+      dayEl.classList.remove('dimmed');
+    } else {
+      dayEl.classList.add('dimmed');
+    }
+  });
+}
+
+updateMonthHighlight();
+tasksByDate.forEach((_, dateKey) => renderTasksForDate(dateKey));
   </script>
 </body>
 </html>
