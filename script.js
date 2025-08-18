@@ -559,7 +559,7 @@ function maybeShowHandle(ev) {
         if (handleHideTimer) clearTimeout(handleHideTimer);
         handleHideTimer = setTimeout(() => {
             notepadHandle.classList.remove('show');
-        }, 1500);
+        }, 500);
     }
 }
 window.addEventListener('mousemove', maybeShowHandle, { passive: true });
