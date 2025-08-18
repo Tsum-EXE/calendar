@@ -1,3 +1,4 @@
+/* ====== STORAGE (existing) ====== */
 function saveTasks() {
     const data = {
         autoId,
@@ -13,7 +14,6 @@ function loadTasks() {
         const data = JSON.parse(raw);
         autoId = data.autoId || 1;
         (data.tasks || []).forEach(t => {
-
             insertTask(t);
         });
     } catch (e) {
@@ -21,16 +21,10 @@ function loadTasks() {
     }
 }
 
-
-const fmtMonth = new Intl.DateTimeFormat(undefined, {
-    month: 'long'
-});
-const fmtMonthShort = new Intl.DateTimeFormat(undefined, {
-    month: 'short'
-});
-const fmtYear = new Intl.DateTimeFormat(undefined, {
-    year: 'numeric'
-});
+/* ====== DATE HELPERS (existing) ====== */
+const fmtMonth = new Intl.DateTimeFormat(undefined, { month: 'long' });
+const fmtMonthShort = new Intl.DateTimeFormat(undefined, { month: 'short' });
+const fmtYear = new Intl.DateTimeFormat(undefined, { year: 'numeric' });
 
 const today = new Date();
 const todayKey = ymdKey(today);
@@ -40,17 +34,8 @@ function ymdKey(d) {
         String(d.getMonth() + 1).padStart(2, "0") + "-" +
         String(d.getDate()).padStart(2, "0");
 }
-
-function addDays(d, n) {
-    const x = new Date(d);
-    x.setDate(x.getDate() + n);
-    return x;
-}
-
-function addWeeks(d, n) {
-    return addDays(d, n * 7);
-}
-
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function addWeeks(d, n) { return addDays(d, n * 7); }
 function startOfWeekMonday(d) {
     const tmp = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     let day = tmp.getDay();
@@ -60,11 +45,10 @@ function startOfWeekMonday(d) {
     return tmp;
 }
 
-
+/* ====== ELEMENTS (existing + notepad) ====== */
 const scrollEl = document.getElementById('scroll');
 const weeksEl = document.getElementById('weeks');
 const backToTodayBtn = document.getElementById('backToToday');
-
 
 const dialogOverlay = document.getElementById('dialogOverlay');
 const taskNameInput = document.getElementById('taskName');
@@ -73,14 +57,18 @@ const createTaskBtn = document.getElementById('createTaskBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const dialogTitle = document.getElementById('dialogTitle');
 
+/* Notepad elements */
+const notepadHandle = document.getElementById('notepadHandle');
+const notepadPanel = document.getElementById('notepadPanel');
+const closeNotepadBtn = document.getElementById('closeNotepad');
+const notepadText = document.getElementById('notepadText');
 
+/* ====== STATE (existing) ====== */
 let autoId = 1;
 const tasksById = new Map();
 const tasksByDate = new Map();
 
-function ensureDateList(key) {
-    if (!tasksByDate.has(key)) tasksByDate.set(key, []);
-}
+function ensureDateList(key) { if (!tasksByDate.has(key)) tasksByDate.set(key, []); }
 
 function insertTask(task) {
     tasksById.set(task.id, task);
@@ -89,7 +77,6 @@ function insertTask(task) {
     sortTasksForDate(task.dateKey);
     saveTasks();
 }
-
 function removeTask(task) {
     tasksById.delete(task.id);
     const list = tasksByDate.get(task.dateKey) || [];
@@ -97,7 +84,6 @@ function removeTask(task) {
     if (i >= 0) list.splice(i, 1);
     saveTasks();
 }
-
 function moveTask(task, newDateKey) {
     const oldKey = task.dateKey;
     if (oldKey === newDateKey) return;
@@ -111,19 +97,16 @@ function moveTask(task, newDateKey) {
     sortTasksForDate(newDateKey);
     saveTasks();
 }
-
 function sortTasksForDate(key) {
     const ids = tasksByDate.get(key) || [];
     ids.sort((a, b) => {
-        const A = tasksById.get(a),
-            B = tasksById.get(b);
-
+        const A = tasksById.get(a), B = tasksById.get(b);
         if ((A.completed ? 1 : 0) !== (B.completed ? 1 : 0)) return (A.completed ? 1 : 0) - (B.completed ? 1 : 0);
         return A.createdAt - B.createdAt;
     });
 }
 
-
+/* ====== RENDER CALENDAR (existing) ====== */
 const initialWeek = startOfWeekMonday(today);
 const PRELOAD_WEEKS_EACH_SIDE = 52;
 let firstWeekStart, lastWeekStart;
@@ -142,7 +125,6 @@ function renderInitial() {
         frag.appendChild(renderWeek(weekStart));
     }
     weeksEl.appendChild(frag);
-
 
     requestAnimationFrame(() => {
         const weekEl = weeksEl.querySelector(`[data-week='${ymdKey(initialWeek)}']`);
@@ -180,7 +162,6 @@ function renderWeek(weekStart) {
         dateRow.appendChild(num);
         day.appendChild(dateRow);
 
-
         if (d.getDate() === 1) {
             const pill = document.createElement('div');
             pill.className = 'month-pill';
@@ -189,24 +170,20 @@ function renderWeek(weekStart) {
             if (!newMonthLabel) newMonthLabel = `${fmtMonth.format(d)} ${fmtYear.format(d)}`;
         }
 
-
         const tasksWrap = document.createElement('div');
         tasksWrap.className = 'tasks';
         day.appendChild(tasksWrap);
 
-
         day.addEventListener('click', () => {
-            const [y, m, d] = day.dataset.date.split("-").map(Number);
+            const [y, m] = day.dataset.date.split("-").map(Number);
             activeMonth = y + "-" + String(m).padStart(2, "0");
             updateMonthHighlight();
         });
-
 
         day.addEventListener('dblclick', (e) => {
             const isTask = e.target.closest && e.target.closest('.task');
             if (!isTask) openDialog(day, null);
         });
-
 
         day.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -226,9 +203,7 @@ function renderWeek(weekStart) {
             }
         });
 
-
         renderTasksIntoDay(day, dateKey);
-
         week.appendChild(day);
     }
 
@@ -246,7 +221,6 @@ function renderTasksIntoDay(dayEl, dateKey) {
     const ids = tasksByDate.get(dateKey) || [];
     ids.forEach(id => wrap.appendChild(buildTaskElement(tasksById.get(id))));
 }
-
 function renderTasksForDate(dateKey) {
     const dayEl = weeksEl.querySelector(`.day[data-date='${dateKey}']`);
     if (dayEl) renderTasksIntoDay(dayEl, dateKey);
@@ -261,7 +235,6 @@ function prependWeeks(count = 26) {
     }
     weeksEl.insertBefore(frag, weeksEl.firstChild);
 }
-
 function appendWeeks(count = 26) {
     const frag = document.createDocumentFragment();
     for (let i = 0; i < count; i++) {
@@ -276,7 +249,6 @@ function trimOffscreen(maxKeep = 160) {
     const todayWeekKey = ymdKey(initialWeek);
     const weeks = weeksEl.children;
     if (weeks.length <= maxKeep) return;
-
 
     while (weeks.length > maxKeep) {
         const first = weeks[0];
@@ -301,7 +273,7 @@ function trimOffscreen(maxKeep = 160) {
     }
 }
 
-
+/* ====== SCROLL (existing) ====== */
 let ticking = false;
 scrollEl.addEventListener('scroll', () => {
     if (ticking) return;
@@ -318,7 +290,6 @@ scrollEl.addEventListener('scroll', () => {
         if (nearBottom) appendWeeks(26);
         trimOffscreen();
 
-
         const todayEl = weeksEl.querySelector('.day.today');
         if (todayEl) {
             const tRect = todayEl.getBoundingClientRect();
@@ -329,21 +300,16 @@ scrollEl.addEventListener('scroll', () => {
         ticking = false;
     });
     ticking = true;
-}, {
-    passive: true
-});
+}, { passive: true });
 
 backToTodayBtn.addEventListener('click', () => {
     const weekEl = weeksEl.querySelector(`[data-week='${ymdKey(initialWeek)}']`);
     if (weekEl) {
-        weekEl.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-        });
+        weekEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 });
 
-
+/* ====== TASK UI (existing) ====== */
 let selectedTaskId = null;
 
 function buildTaskElement(task) {
@@ -352,7 +318,6 @@ function buildTaskElement(task) {
     el.dataset.id = task.id;
     el.draggable = true;
     el.style.borderLeft = `4px solid ${task.color}`;
-
 
     const label = document.createElement('label');
     label.className = 'check-wrap';
@@ -376,7 +341,6 @@ function buildTaskElement(task) {
         star.classList.add('filled');
         el.classList.add('important');
     }
-
     star.addEventListener('click', (e) => {
         e.stopPropagation();
         task.important = !task.important;
@@ -392,9 +356,7 @@ function buildTaskElement(task) {
         saveTasks();
     });
 
-
     if (task.completed) el.classList.add('completed');
-
 
     label.addEventListener('mouseenter', () => {
         if (!input.checked) el.classList.add('preview-complete');
@@ -402,7 +364,6 @@ function buildTaskElement(task) {
     label.addEventListener('mouseleave', () => {
         el.classList.remove('preview-complete');
     });
-
 
     input.addEventListener('change', () => {
         task.completed = input.checked;
@@ -413,7 +374,6 @@ function buildTaskElement(task) {
         saveTasks();
     });
 
-
     el.addEventListener('click', (e) => {
         if (e.target === input || e.target === box || e.target === label) return;
         document.querySelectorAll('.task.selected').forEach(n => n.classList.remove('selected'));
@@ -421,14 +381,12 @@ function buildTaskElement(task) {
         selectedTaskId = task.id;
     });
 
-
     el.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         const dayEl = el.closest('.day');
         openDialog(dayEl, el);
         saveTasks();
     });
-
 
     el.addEventListener('dragstart', (e) => {
         el.classList.add('dragging');
@@ -439,10 +397,8 @@ function buildTaskElement(task) {
     el.appendChild(label);
     el.appendChild(text);
     el.appendChild(star);
-
     return el;
 }
-
 
 document.addEventListener('keydown', (e) => {
     const activeTag = document.activeElement && document.activeElement.tagName;
@@ -458,7 +414,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-
+/* ====== DIALOG (existing) ====== */
 let selectedColor = '#f4b4b4';
 let dialogDayEl = null;
 let editingTaskEl = null;
@@ -470,7 +426,6 @@ function openDialog(dayEl, taskEl) {
     dialogTitle.textContent = taskEl ? 'Edit task' : 'Create task';
     createTaskBtn.textContent = taskEl ? 'Save Changes' : 'Create Task';
 
-
     if (taskEl) {
         const id = Number(taskEl.dataset.id);
         const t = tasksById.get(id);
@@ -481,26 +436,22 @@ function openDialog(dayEl, taskEl) {
         selectedColor = '#f4b4b4';
     }
 
-
     [...colorOptions.children].forEach(opt => {
         opt.classList.toggle('selected', opt.dataset.color === selectedColor);
     });
 
     dialogOverlay.style.display = 'flex';
-
     saveTasks();
     requestAnimationFrame(() => {
         taskNameInput.focus();
         taskNameInput.select();
     });
 }
-
 function closeDialog() {
     dialogOverlay.style.display = 'none';
     dialogDayEl = null;
     editingTaskEl = null;
 }
-
 
 colorOptions.addEventListener('click', (e) => {
     const opt = e.target.closest('.color-option');
@@ -508,29 +459,19 @@ colorOptions.addEventListener('click', (e) => {
     selectedColor = opt.dataset.color;
     [...colorOptions.children].forEach(o => o.classList.toggle('selected', o === opt));
 });
-
-
 createTaskBtn.addEventListener('click', confirmTask);
 cancelBtn.addEventListener('click', closeDialog);
-
-
 dialogOverlay.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeDialog();
     if (e.key === 'Enter') confirmTask();
 });
-
-
 dialogOverlay.addEventListener('click', (e) => {
     if (e.target === dialogOverlay) closeDialog();
 });
-
 function confirmTask() {
     if (!dialogDayEl) return;
     const name = taskNameInput.value.trim();
-    if (!name) {
-        taskNameInput.focus();
-        return;
-    }
+    if (!name) { taskNameInput.focus(); return; }
     const dateKey = dialogDayEl.dataset.date;
 
     if (editingTaskEl) {
@@ -558,12 +499,11 @@ function confirmTask() {
     closeDialog();
 }
 
-
+/* ====== INIT (existing) ====== */
 loadTasks();
 renderInitial();
 
 let activeMonth = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
-
 function updateMonthHighlight() {
     const allDays = weeksEl.querySelectorAll('.day');
     allDays.forEach(dayEl => {
@@ -577,7 +517,6 @@ function updateMonthHighlight() {
         }
     });
 }
-
 updateMonthHighlight();
 tasksByDate.forEach((_, dateKey) => renderTasksForDate(dateKey));
 const clearAllBtn = document.getElementById('clearAllTasks');
@@ -589,5 +528,103 @@ clearAllBtn.addEventListener('click', () => {
         weeksEl.querySelectorAll('.tasks').forEach(wrap => wrap.innerHTML = '');
         autoId = 1;
         alert("All tasks cleared.");
+    }
+});
+
+/* ====== NOTEPAD: behavior & autosave ====== */
+const NOTEPAD_STORAGE_KEY = 'calendarNotepad';
+const NOTEPAD_OPEN_KEY = 'calendarNotepadOpen';
+
+function openNotepad() {
+    document.body.classList.add('notepad-open');
+    localStorage.setItem(NOTEPAD_OPEN_KEY, '1');
+    notepadText.focus();
+}
+function closeNotepad() {
+    document.body.classList.remove('notepad-open');
+    localStorage.setItem(NOTEPAD_OPEN_KEY, '0');
+}
+function toggleNotepad() {
+    if (document.body.classList.contains('notepad-open')) closeNotepad(); else openNotepad();
+}
+
+/* Show handle when mouse is near right edge */
+let handleHideTimer = null;
+function maybeShowHandle(ev) {
+    if (document.body.classList.contains('notepad-open')) return;
+    const threshold = 80; // px from the right edge
+    const fromRight = window.innerWidth - ev.clientX;
+    if (fromRight <= threshold) {
+        notepadHandle.classList.add('show');
+        if (handleHideTimer) clearTimeout(handleHideTimer);
+        handleHideTimer = setTimeout(() => {
+            notepadHandle.classList.remove('show');
+        }, 1500);
+    }
+}
+window.addEventListener('mousemove', maybeShowHandle, { passive: true });
+
+/* Clicks */
+notepadHandle.addEventListener('click', openNotepad);
+closeNotepadBtn.addEventListener('click', closeNotepad);
+
+/* Keyboard: ESC closes if focused in notepad */
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('notepad-open')) {
+        // If dialog is open, let it handle escape
+        const dialogVisible = dialogOverlay && dialogOverlay.style.display === 'flex';
+        if (!dialogVisible) closeNotepad();
+    }
+});
+
+/* Autosave notes */
+function loadNotepad() {
+    const saved = localStorage.getItem(NOTEPAD_STORAGE_KEY);
+    if (typeof saved === 'string') notepadText.value = saved;
+    const openSaved = localStorage.getItem(NOTEPAD_OPEN_KEY);
+    if (openSaved === '1') {
+        openNotepad();
+        // focus after open to avoid scroll jank
+        setTimeout(() => notepadText.focus(), 50);
+    }
+}
+let saveNoteTimer = null;
+notepadText.addEventListener('input', () => {
+    // light debounce to avoid thrashing
+    if (saveNoteTimer) cancelAnimationFrame(saveNoteTimer);
+    saveNoteTimer = requestAnimationFrame(() => {
+        localStorage.setItem(NOTEPAD_STORAGE_KEY, notepadText.value);
+    });
+});
+loadNotepad();
+
+/* Touch support: reveal handle when swiping from right edge */
+let touchStartX = null;
+window.addEventListener('touchstart', (e) => {
+    if (document.body.classList.contains('notepad-open')) return;
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    const fromRight = window.innerWidth - touchStartX;
+    if (fromRight < 24) {
+        notepadHandle.classList.add('show');
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', () => {
+    if (!document.body.classList.contains('notepad-open')) {
+        notepadHandle.classList.remove('show');
+    }
+}, { passive: true });
+
+/* Optional: click outside notepad to close (but not when clicking inside) */
+notepadPanel.addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('click', (e) => {
+    // If clicking on the panel/handle/close button, ignore.
+    if (e.target === notepadPanel || e.target === notepadHandle || e.target === closeNotepadBtn) return;
+    // If notepad open and click happened outside panel, close it.
+    if (document.body.classList.contains('notepad-open')) {
+        // Avoid closing when clicking Back to Today or Clear All, etc.
+        const withinPanel = e.target.closest && e.target.closest('#notepadPanel');
+        if (!withinPanel) closeNotepad();
     }
 });
