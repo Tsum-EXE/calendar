@@ -9,6 +9,20 @@
 </head>
 
 <body>
+  <!-- Slide-in handle -->
+  <button id="notepadHandle" aria-label="Open notepad" title="Open notepad">
+    ›
+  </button>
+
+  <!-- Notepad panel -->
+  <aside id="notepadPanel" aria-label="Notepad" role="region">
+    <div class="notepad-header">
+      <div class="title">Notepad</div>
+      <button id="closeNotepad" aria-label="Close notepad" title="Close">✕</button>
+    </div>
+    <textarea id="notepadText" placeholder="Type notes here... (auto-saved)"></textarea>
+  </aside>
+
   <div class="app">
     <div class="weekday-header" aria-hidden="true">
       <div class="dayname">Mon</div>
@@ -26,6 +40,7 @@
   </div>
 
   <button id="backToToday">Back to Today</button>
+
   <div class="dialog-overlay" id="dialogOverlay">
     <div class="dialog" role="dialog" aria-modal="true">
       <h3 id="dialogTitle">Create task</h3>
@@ -41,9 +56,11 @@
       </div>
     </div>
   </div>
+
   <button id="clearAllTasks" title="Clear all tasks (nuclear option)">
     Clear All Tasks
   </button>
+
   <script src="script.js"></script>
 </body>
 
