@@ -11,16 +11,13 @@
     --gap: 8px;
     --radius: 10px;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --notepad-w: clamp(280px, 25vw, 520px);
+    --handle-w: 42px;
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html,
-body {
-    height: 100%;
-}
+html, body { height: 100%; }
 
 body {
     margin: 0;
@@ -28,6 +25,12 @@ body {
     color: var(--text);
     background: var(--bg);
     overflow: hidden;
+    transition: width .2s ease;
+}
+
+/* When notepad is open, shrink the main app width */
+body.notepad-open .app {
+    width: calc(100vw - var(--notepad-w));
 }
 
 .app {
@@ -35,8 +38,8 @@ body {
     width: 100vw;
     display: grid;
     grid-template-rows: var(--header-h) 1fr;
+    transition: width .25s ease;
 }
-
 
 .weekday-header {
     position: sticky;
@@ -59,7 +62,6 @@ body {
     user-select: none;
 }
 
-
 .calendar-scroll {
     height: calc(100vh - var(--header-h));
     overflow: auto;
@@ -73,7 +75,6 @@ body {
     gap: var(--gap);
     min-height: 100%;
 }
-
 
 .week {
     display: grid;
@@ -94,10 +95,7 @@ body {
     flex-direction: column;
     gap: 6px;
 }
-
-.day:hover {
-    outline: 2px solid var(--ring);
-}
+.day:hover { outline: 2px solid var(--ring); }
 
 .date-row {
     display: flex;
@@ -105,21 +103,13 @@ body {
     justify-content: space-between;
 }
 
-.date-num {
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.out-month .date-num {
-    color: var(--muted);
-}
-
+.date-num { font-weight: 600; font-size: 14px; }
+.out-month .date-num { color: var(--muted); }
 
 .today {
     border: 1px solid rgba(224, 122, 95, 0.6);
     box-shadow: 0 0 0 2px rgba(224, 122, 95, 0.25), var(--shadow);
 }
-
 .today .date-num::after {
     content: " Today";
     font-size: 11px;
@@ -156,12 +146,7 @@ body {
     pointer-events: none;
 }
 
-
-.tasks {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.tasks { display: flex; flex-direction: column; gap: 4px; }
 
 .task {
     display: grid;
@@ -176,104 +161,30 @@ body {
     user-select: none;
     position: relative;
 }
+.task[draggable="true"] { cursor: grab; }
+.task.dragging { opacity: 0.6; cursor: grabbing; }
+.task.selected { outline: 2px solid var(--accent); }
 
-.task[draggable="true"] {
-    cursor: grab;
-}
-
-.task.dragging {
-    opacity: 0.6;
-    cursor: grabbing;
-}
-
-.task.selected {
-    outline: 2px solid var(--accent);
-}
-
-
-.check-wrap {
-    position: relative;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-}
-
-.check {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-
-}
-
+.check-wrap { position: relative; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; }
+.check { position: absolute; opacity: 0; pointer-events: none; }
 .check-box {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #a78b71;
-    border-radius: 5px;
-    display: grid;
-    place-items: center;
-    transition: box-shadow .12s ease, background .12s ease, border-color .12s ease;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
-    background: #fff;
+    width: 18px; height: 18px; border: 2px solid #a78b71; border-radius: 5px;
+    display: grid; place-items: center; transition: box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04); background: #fff;
 }
+.check-box::after { content: ""; width: 10px; height: 10px; border-radius: 2px; transform: scale(0); transition: transform .12s ease; background: #a78b71; }
+.check:checked + .check-box { background: #efe6db; border-color: #a78b71; }
+.check:checked + .check-box::after { transform: scale(1); }
+.check-wrap:hover .check-box { box-shadow: 0 0 0 3px rgba(167, 139, 113, 0.20); }
 
-.check-box::after {
-    content: "";
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    transform: scale(0);
-    transition: transform .12s ease;
-    background: #a78b71;
-}
+.task.completed { color: #9a9a9a; background: #f0f0f0; border-style: dashed; }
+.task.preview-complete { color: #9a9a9a; background: #f0f0f0; border-style: dashed; }
 
-.check:checked+.check-box {
-    background: #efe6db;
-    border-color: #a78b71;
-}
+.day.drag-over { outline: 2px dashed var(--accent); }
 
-.check:checked+.check-box::after {
-    transform: scale(1);
-}
-
-.check-wrap:hover .check-box {
-    box-shadow: 0 0 0 3px rgba(167, 139, 113, 0.20);
-}
-
-.task.completed {
-    color: #9a9a9a;
-    background: #f0f0f0;
-    border-style: dashed;
-}
-
-
-.task.preview-complete {
-    color: #9a9a9a;
-    background: #f0f0f0;
-    border-style: dashed;
-}
-
-.day.drag-over {
-    outline: 2px dashed var(--accent);
-}
-
-
-.calendar-scroll::-webkit-scrollbar {
-    width: 8px;
-}
-
-.calendar-scroll::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 999px;
-}
-
-.calendar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-
+.calendar-scroll::-webkit-scrollbar { width: 8px; }
+.calendar-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 999px; }
+.calendar-scroll::-webkit-scrollbar-track { background: transparent; }
 
 #backToToday {
     position: fixed;
@@ -291,139 +202,125 @@ body {
     transition: bottom 0.3s ease;
     z-index: 10;
 }
-
-#backToToday.show {
-    bottom: 20px;
-}
-
+#backToToday.show { bottom: 20px; }
 
 .dialog-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.3);
     display: none;
-
-    justify-content: center;
-    align-items: center;
+    justify-content: center; align-items: center;
     z-index: 20;
 }
-
 .dialog {
     background: #fff;
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 280px;
-    max-width: 90vw;
+    display: flex; flex-direction: column; gap: 10px;
+    min-width: 280px; max-width: 90vw;
 }
+.dialog h3 { margin: 0; font-size: 16px; }
+.dialog input[type="text"] { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 8px; }
+.color-options { display: flex; gap: 8px; }
+.color-option { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.color-option.selected { border-color: #333; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn { background: #eee; border: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.btn.primary { background: var(--accent); color: white; }
 
-.dialog h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.dialog input[type="text"] {
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-.color-options {
-    display: flex;
-    gap: 8px;
-}
-
-.color-option {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-}
-
-.color-option.selected {
-    border-color: #333;
-}
-
-.dialog-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-.btn {
-    background: #eee;
-    border: none;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.btn.primary {
-    background: var(--accent);
-    color: white;
-}
-
-.day.dimmed {
-    opacity: 0.5;
-}
+.day.dimmed { opacity: 0.5; }
 
 .task .star {
-    position: absolute;
-    right: 8px;
-
-    top: 50%;
-    transform: translateY(-50%);
-
-    font-size: 16px;
-    color: var(--muted);
-    cursor: pointer;
-    opacity: 0;
-
-    transition: color 0.2s ease, opacity 0.2s ease;
-    pointer-events: auto;
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; color: var(--muted); cursor: pointer; opacity: 0;
+    transition: color 0.2s ease, opacity 0.2s ease; pointer-events: auto;
 }
-
-.task:hover .star {
-    opacity: 1;
-
-}
-
-.task .star.filled {
-    color: var(--accent);
-
-}
-
-.task.important {
-    background: #fff3e6;
-
-    border: 1px solid var(--accent);
-}
+.task:hover .star { opacity: 1; }
+.task .star.filled { color: var(--accent); }
+.task.important { background: #fff3e6; border: 1px solid var(--accent); }
 
 #clearAllTasks {
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
-    padding: 8px 12px;
-    font-size: 13px;
-    background: #b00020;
+    position: fixed; bottom: 10px; right: 10px; padding: 8px 12px; font-size: 13px;
+    background: #b00020; color: white; border: none; border-radius: 8px;
+    box-shadow: var(--shadow); cursor: pointer; opacity: 0.2;
+    transition: opacity 0.2s ease; z-index: 999;
+}
+#clearAllTasks:hover { opacity: 1; }
 
-    color: white;
+/* ---------- Notepad additions ---------- */
+
+/* Slide-in handle */
+#notepadHandle {
+    position: fixed;
+    top: 50%;
+    right: calc(-1 * var(--handle-w));
+    transform: translateY(-50%);
+    width: var(--handle-w);
+    height: 64px;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px 0 0 12px;
+    background: var(--accent);
+    color: white;
+    font-size: 28px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
     box-shadow: var(--shadow);
     cursor: pointer;
-    opacity: 0.2;
+    z-index: 25;
+    transition: right .25s ease, opacity .2s ease;
+    opacity: 0.9;
+}
+#notepadHandle.show { right: 0; }
+body.notepad-open #notepadHandle { display: none; }
 
-    transition: opacity 0.2s ease;
-    z-index: 999;
+/* Panel itself */
+#notepadPanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: var(--notepad-w);
+    background: var(--panel);
+    border-left: 1px solid rgba(0,0,0,0.08);
+    box-shadow: -6px 0 24px rgba(0,0,0,0.08);
+    transform: translateX(100%);
+    transition: transform .25s ease;
+    z-index: 24;
+    display: flex;
+    flex-direction: column;
+}
+body.notepad-open #notepadPanel { transform: translateX(0); }
+
+.notepad-header {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: var(--panel);
+}
+.notepad-header .title { font-weight: 600; letter-spacing: 0.02em; }
+#closeNotepad {
+    border: none; background: transparent; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 8px; font-size: 16px;
+}
+#closeNotepad:hover { background: rgba(0,0,0,0.06); }
+
+#notepadText {
+    width: 100%;
+    height: calc(100vh - var(--header-h));
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 12px;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    background: #fffdfc;
+    color: #333;
 }
 
-#clearAllTasks:hover {
-    opacity: 1;
-
-}
+/* Make sure the calendar’s floating button stays visible above the panel edge */
+#backToToday { z-index: 26; }
